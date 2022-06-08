@@ -5,6 +5,7 @@
   "description": "[description]",
   "private": true,
   "scripts": {
+    "watch":"pnpm nodemon --ignore \"*.d.ts\" --watch \"src\" -e ts,js,mjs,json,vue --exec \"pnpm build\"",
     "dev": "npm run clear && cross-env NODE_ENV=development run-p dev:*",
     "dev:prepare": "esno scripts/prepare.ts",
     "dev:web": "vite",

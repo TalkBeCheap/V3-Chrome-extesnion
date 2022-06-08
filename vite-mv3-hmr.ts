@@ -24,8 +24,7 @@ export const MV3Hmr = (): PluginOption => {
           payload.updates = payload.updates.map((update) => {
             const isJsUpdate = update.type === 'js-update'
 
-            if (!isJsUpdate)
-              return update
+            if (!isJsUpdate) return update
 
             return {
               ...update,
@@ -38,20 +37,26 @@ export const MV3Hmr = (): PluginOption => {
       }
 
       async function writeToDisk(url: string) {
-        const result = await server.transformRequest(url.replace(/^\/@id\//, ''))
+        const result = await server.transformRequest(
+          url.replace(/^\/@id\//, ''),
+        )
         let code = result?.code
-        if (!code)
-          return
+        if (!code) return
 
         const urlModule = await server.moduleGraph.getModuleByUrl(url)
         const importedModules = urlModule?.importedModules
 
         if (importedModules) {
           for (const mod of importedModules) {
-            code = code.replace(mod.url, normalizeViteUrl(isWin
-              ? mod.url.replace(/[A-Z]:\//,'').replace(/:/,'.')
-              : mod.url,
-              mod.type)) // fix invalid colon in /@fs/C:, /@id/plugin-vue:export-helper
+            code = code.replace(
+              mod.url,
+              normalizeViteUrl(
+                isWin
+                  ? mod.url.replace(/[A-Z]:\//, '').replace(/:/, '.')
+                  : mod.url,
+                mod.type,
+              ),
+            ) // fix invalid colon in /@fs/C:, /@id/plugin-vue:export-helper
             writeToDisk(mod.url)
           }
         }
@@ -60,21 +65,24 @@ export const MV3Hmr = (): PluginOption => {
           code = code
             .replace(/\/@vite\/client/g, '/dist/mv3client.mjs')
             .replace(/(\/\.vite\/deps\/\S+?)\?v=\w+/g, '$1')
-          if (isWin) { code = code
-            .replace(/(from\s+["']\/@fs\/)[A-Z]:\//g, '$1')
-          };
+          if (isWin) {
+            code = code.replace(/(from\s+["']\/@fs\/)[A-Z]:\//g, '$1')
+          }
 
-
-          const targetFile = normalizeFsUrl(isWin
-            ? urlModule.url.replace(/[A-Z]:\//,'').replace(/:/,'.')
-            : urlModule.url,
-            urlModule.type) // fix invalid colon in /@fs/C:, /@id/plugin-vue:export-helper
+          const targetFile = normalizeFsUrl(
+            isWin
+              ? urlModule.url.replace(/[A-Z]:\//, '').replace(/:/, '.')
+              : urlModule.url,
+            urlModule.type,
+          ) // fix invalid colon in /@fs/C:, /@id/plugin-vue:export-helper
           await fs.ensureDir(dirname(targetFile))
           await fs.writeFile(targetFile, code)
         }
       }
 
-      Object.keys(server.config.build.rollupOptions.input!).map(entry => writeToDisk(`/${entry}/main.ts`))
+      Object.keys(server.config.build.rollupOptions.input!).map((entry) =>
+        writeToDisk(`/${entry}/main.ts`),
+      )
     },
   }
 }
